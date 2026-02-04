@@ -1,0 +1,111 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: portfoliohub-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: portfoliohub
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - portfoliohub-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root -d portfoliohub"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: portfoliohub-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - portfoliohub-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # NestJS Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: portfoliohub-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # Database Configuration
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USERNAME: root
+      DATABASE_PASSWORD: root
+      DATABASE_NAME: portfoliohub
+      
+      # JWT Configuration
+      JWT_SECRET: portfoliohubsecretkey
+      JWT_EXPIRES_IN: 7d
+      
+      # Application
+      PORT: 8000
+      NODE_ENV: production
+      
+      # Cloudinary Configuration
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-dwucxdyb9}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-167729889799351}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-b_MH4sKdlaohV514L8dtqxtjxsA}
+      
+      # Redis Configuration
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ""
+      REDIS_DB: 0
+      REDIS_TTL: 3600
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - portfoliohub-network
+    # Removed volumes in production mode to use built files from image
+
+  # Nuxt Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: portfoliohub-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NUXT_PUBLIC_API_BASE_URL: http://localhost:8000/api/v1
+      NODE_ENV: production
+    depends_on:
+      - backend
+    networks:
+      - portfoliohub-network
+    # Removed volumes in production mode to use built files from image
+
+networks:
+  portfoliohub-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
