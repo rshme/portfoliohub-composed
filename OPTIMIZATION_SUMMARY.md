@@ -1,5 +1,9 @@
 # CPU Optimization Summary
 
+**Note:** This document is in Indonesian as it addresses an issue originally reported in Indonesian. For English documentation, see [DEPLOYMENT.md](./DEPLOYMENT.md) and [BEFORE_AFTER.md](./BEFORE_AFTER.md).
+
+---
+
 ## Problem
 CPU droplet dengan 1 core selalu lebih dari 100% saat menjalankan `docker compose up -d` untuk build frontend dan backend.
 
@@ -13,6 +17,9 @@ CPU droplet dengan 1 core selalu lebih dari 100% saat menjalankan `docker compos
 ## Solutions Implemented
 
 ### 1. Resource Limits di Docker Compose (docker-compose.yml)
+
+**Important Note:** These resource limits apply to **running containers**, not during the build phase. During builds, the sequential build script ensures only one service builds at a time. Once running, both services share resources but are capped individually.
+
 **Sebelum:**
 ```yaml
 backend:

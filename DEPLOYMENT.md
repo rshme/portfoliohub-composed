@@ -11,6 +11,8 @@ Each service has defined CPU and memory limits to prevent resource exhaustion:
 - **Memory Limits**: 1GB max per service
 - **Memory Reservations**: 256MB guaranteed per service
 
+**Important:** These limits apply to **running containers**, not during builds. When both services are running, Docker's scheduler shares the CPU between them. During the build phase, use sequential building (as shown below) to ensure only one service builds at a time.
+
 ### 2. Optimized npm Installation
 Both frontend and backend Dockerfiles use optimized npm commands:
 - `--prefer-offline`: Reduces network overhead
