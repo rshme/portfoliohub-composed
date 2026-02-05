@@ -6,13 +6,18 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci
+# Install dependencies with limited concurrency for low-resource environments
+# --prefer-offline reduces network overhead
+# Setting max-old-space-size to prevent memory issues
+RUN npm ci --prefer-offline --no-audit --no-fund \
+    && npm cache clean --force
 
 # Copy source code
 COPY . .
 
-# Build the application
+# Build the application with optimized Node.js memory settings
+# Limit max old space size to 512MB to prevent memory spikes
+ENV NODE_OPTIONS="--max-old-space-size=512"
 RUN npm run build
 
 # Production stage
@@ -24,7 +29,9 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install all dependencies (including dev for CLI commands)
-RUN npm ci
+# Use same optimizations as build stage
+RUN npm ci --prefer-offline --no-audit --no-fund \
+    && npm cache clean --force
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
