@@ -1,5 +1,7 @@
-import VueApexCharts from 'vue3-apexcharts';
-
 export default defineNuxtPlugin((nuxtApp) => {
-  nuxtApp.vueApp.component('apexchart', VueApexCharts);
+  if (process.client) {
+    import('vue3-apexcharts').then((module) => {
+      nuxtApp.vueApp.component('apexchart', module.default);
+    });
+  }
 });

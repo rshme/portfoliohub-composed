@@ -223,5 +223,15 @@ export default defineNuxtConfig({
 
   pinia: {
     storesDirs: ['./stores/**']
+  },
+
+  build: {
+    transpile: ['vue3-apexcharts', 'apexcharts']
+  },
+
+  vite: {
+    optimizeDeps: {
+      include: ['vue3-apexcharts', 'apexcharts']
+    }
   }
 })
