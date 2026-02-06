@@ -213,24 +213,23 @@
             <h3 class="text-sm sm:text-base font-semibold text-gray-900 mb-3 sm:mb-4">Platform</h3>
             <ul class="space-y-2">
               <li><NuxtLink to="/explore" class="text-sm sm:text-base text-gray-600 hover:text-gray-900 transition-colors">Explore Projects</NuxtLink></li>
-              <li><NuxtLink to="/how-it-works" class="text-sm sm:text-base text-gray-600 hover:text-gray-900 transition-colors">How it Works</NuxtLink></li>
-              <li><NuxtLink to="/success-stories" class="text-sm sm:text-base text-gray-600 hover:text-gray-900 transition-colors">Success Stories</NuxtLink></li>
+              <li><NuxtLink to="/#" class="text-sm sm:text-base text-gray-600 hover:text-gray-900 transition-colors">How it Works</NuxtLink></li>
             </ul>
           </div>
 
           <div>
             <h3 class="text-sm sm:text-base font-semibold text-gray-900 mb-3 sm:mb-4">Support</h3>
             <ul class="space-y-2">
-              <li><NuxtLink to="/help" class="text-sm sm:text-base text-gray-600 hover:text-gray-900 transition-colors">Help Center</NuxtLink></li>
-              <li><NuxtLink to="/contact" class="text-sm sm:text-base text-gray-600 hover:text-gray-900 transition-colors">Contact Us</NuxtLink></li>
-              <li><NuxtLink to="/privacy" class="text-sm sm:text-base text-gray-600 hover:text-gray-900 transition-colors">Privacy Policy</NuxtLink></li>
-              <li><NuxtLink to="/terms" class="text-sm sm:text-base text-gray-600 hover:text-gray-900 transition-colors">Terms of Service</NuxtLink></li>
+              <li><NuxtLink to="/#" class="text-sm sm:text-base text-gray-600 hover:text-gray-900 transition-colors">Help Center</NuxtLink></li>
+              <li><NuxtLink to="/#" class="text-sm sm:text-base text-gray-600 hover:text-gray-900 transition-colors">Contact Us</NuxtLink></li>
+              <li><NuxtLink to="/#" class="text-sm sm:text-base text-gray-600 hover:text-gray-900 transition-colors">Privacy Policy</NuxtLink></li>
+              <li><NuxtLink to="/#" class="text-sm sm:text-base text-gray-600 hover:text-gray-900 transition-colors">Terms of Service</NuxtLink></li>
             </ul>
           </div>
         </div>
 
         <div class="border-t border-gray-200 mt-6 sm:mt-8 pt-6 sm:pt-8 text-center">
-          <p class="text-xs sm:text-sm text-gray-600">&copy; 2024 PortfolioHub. All rights reserved.</p>
+          <p class="text-xs sm:text-sm text-gray-600">&copy; 2026 PortfolioHub. All rights reserved.</p>
         </div>
       </div>
     </footer>

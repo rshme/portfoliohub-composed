@@ -203,11 +203,11 @@
           />
           <label for="terms" class="ml-2 block text-sm text-gray-900">
             I agree to the
-            <a href="/terms" class="font-medium text-primary-600 hover:text-primary-500">
+            <a href="/#" class="font-medium text-primary-600 hover:text-primary-500">
               Terms of Service
             </a>
             and
-            <a href="/privacy" class="font-medium text-primary-600 hover:text-primary-500">
+            <a href="/#" class="font-medium text-primary-600 hover:text-primary-500">
               Privacy Policy
             </a>
           </label>
