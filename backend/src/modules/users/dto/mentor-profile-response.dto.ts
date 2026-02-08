@@ -193,6 +193,16 @@ export class MentorProfileResponseDto {
   @Type(() => MentoredProjectDto)
   mentoredProjects: MentoredProjectDto[];
 
+  // === Pending Projects (Applications) ===
+  @Expose()
+  @Type(() => MentoredProjectDto)
+  pendingProjects: MentoredProjectDto[];
+
+  // === Rejected Projects (Applications) ===
+  @Expose()
+  @Type(() => MentoredProjectDto)
+  rejectedProjects: MentoredProjectDto[];
+
   // === Testimonials ===
   @Expose()
   @Type(() => MentorReviewDto)

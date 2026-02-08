@@ -966,11 +966,11 @@ export class UsersService {
     }));
 
     // Get volunteer projects with full details
-    // Only include ACTIVE volunteers to match what's shown in project details
+    // Fetch volunteers with ACTIVE, PENDING, and REJECTED statuses
     const volunteerProjects = await this.projectVolunteerRepository.find({
       where: { 
         userId: user.id,
-        status: VolunteerStatus.ACTIVE 
+        status: In([VolunteerStatus.ACTIVE, VolunteerStatus.PENDING, VolunteerStatus.REJECTED]),
       },
       relations: [
         'project', 
@@ -982,22 +982,36 @@ export class UsersService {
       order: { joinedAt: 'DESC' },
     });
 
-    // Filter projects for completed/cancelled contributions
-    const completedOrCancelledProjects = volunteerProjects.filter(
+    // Filter projects by volunteer status and project status
+    const activeVolunteerProjects = volunteerProjects.filter(
+      (vp) => vp.status === VolunteerStatus.ACTIVE,
+    );
+    
+    const pendingVolunteerProjects = volunteerProjects.filter(
+      (vp) => vp.status === VolunteerStatus.PENDING,
+    );
+    
+    const rejectedVolunteerProjects = volunteerProjects.filter(
+      (vp) => vp.status === VolunteerStatus.REJECTED,
+    );
+
+    // Filter projects for completed/cancelled contributions (only from ACTIVE volunteers)
+    const completedOrCancelledProjects = activeVolunteerProjects.filter(
       (vp) =>
         vp.project?.status === ProjectStatus.COMPLETED ||
         vp.project?.status === ProjectStatus.CANCELLED,
     );
 
-    // Filter projects for active projects (IN_PROGRESS or ON_HOLD)
-    const activeProjectsList = volunteerProjects.filter(
+    // Filter projects for active projects (IN_PROGRESS or ON_HOLD, only from ACTIVE volunteers)
+    const activeProjectsList = activeVolunteerProjects.filter(
       (vp) =>
         vp.project?.status === ProjectStatus.IN_PROGRESS ||
         vp.project?.status === ProjectStatus.ON_HOLD,
     );
 
     // Filter projects for stats calculation (IN_PROGRESS, ON_HOLD, COMPLETED, CANCELLED)
-    const projectsForStats = volunteerProjects.filter(
+    // Only count stats from ACTIVE volunteers
+    const projectsForStats = activeVolunteerProjects.filter(
       (vp) =>
         vp.project?.status === ProjectStatus.IN_PROGRESS ||
         vp.project?.status === ProjectStatus.ON_HOLD ||
@@ -1090,6 +1104,66 @@ export class UsersService {
       }),
     );
 
+    // Format pending projects (volunteer status = PENDING)
+    const pendingProjects = await Promise.all(
+      pendingVolunteerProjects.map(async (vp) => {
+        const totalTasks = await this.taskRepository.count({
+          where: { projectId: vp.projectId },
+        });
+
+        // Get project tags (categories + skills)
+        const categoryNames = vp.project.categories?.map(
+          (pc: any) => pc.category.name,
+        ) || [];
+        const skillNames = vp.project.skills?.map(
+          (ps: any) => ps.skill.name,
+        ) || [];
+        const projectTags = [...categoryNames, ...skillNames];
+
+        return {
+          projectId: vp.project.id,
+          projectName: vp.project.name,
+          projectDescription: vp.project.description,
+          projectStatus: vp.project.status,
+          projectTags,
+          contributionScore: vp.contributionScore || 0,
+          joinedAt: vp.joinedAt,
+          tasksCompleted: vp.tasksCompleted || 0,
+          tasksTotal: totalTasks,
+        };
+      }),
+    );
+
+    // Format rejected projects (volunteer status = REJECTED)
+    const rejectedProjects = await Promise.all(
+      rejectedVolunteerProjects.map(async (vp) => {
+        const totalTasks = await this.taskRepository.count({
+          where: { projectId: vp.projectId },
+        });
+
+        // Get project tags (categories + skills)
+        const categoryNames = vp.project.categories?.map(
+          (pc: any) => pc.category.name,
+        ) || [];
+        const skillNames = vp.project.skills?.map(
+          (ps: any) => ps.skill.name,
+        ) || [];
+        const projectTags = [...categoryNames, ...skillNames];
+
+        return {
+          projectId: vp.project.id,
+          projectName: vp.project.name,
+          projectDescription: vp.project.description,
+          projectStatus: vp.project.status,
+          projectTags,
+          contributionScore: vp.contributionScore || 0,
+          joinedAt: vp.joinedAt,
+          tasksCompleted: vp.tasksCompleted || 0,
+          tasksTotal: totalTasks,
+        };
+      }),
+    );
+
     return {
       // Basic Info
       id: user.id,
@@ -1129,6 +1203,12 @@ export class UsersService {
 
       // Active Projects (IN_PROGRESS/ON_HOLD only)
       activeProjects,
+
+      // Pending Projects (Applications waiting for approval)
+      pendingProjects,
+
+      // Rejected Projects (Applications that have been rejected)
+      rejectedProjects,
     };
   }
 
@@ -1186,11 +1266,11 @@ export class UsersService {
       awardedAt: ub.awardedAt,
     }));
 
-    // Get all mentor projects where mentor is ACTIVE
+    // Get all mentor projects with ACTIVE, PENDING, and REJECTED statuses
     const mentorProjects = await this.projectMentorRepository.find({
       where: { 
         userId: user.id,
-        status: MentorStatus.ACTIVE,
+        status: In([MentorStatus.ACTIVE, MentorStatus.PENDING, MentorStatus.REJECTED]),
       },
       relations: [
         'project', 
@@ -1202,6 +1282,19 @@ export class UsersService {
       ],
       order: { joinedAt: 'DESC' },
     });
+
+    // Filter projects by mentor status
+    const activeMentorProjects = mentorProjects.filter(
+      (mp) => mp.status === MentorStatus.ACTIVE,
+    );
+    
+    const pendingMentorProjects = mentorProjects.filter(
+      (mp) => mp.status === MentorStatus.PENDING,
+    );
+    
+    const rejectedMentorProjects = mentorProjects.filter(
+      (mp) => mp.status === MentorStatus.REJECTED,
+    );
 
     // Get testimonials/reviews from volunteers who worked with this mentor
     const testimonials = await this.testimonialRepository.find({
@@ -1234,19 +1327,19 @@ export class UsersService {
       createdAt: t.createdAt,
     }));
 
-    // Calculate total tasks created by mentor across all projects
-    const projectIds = mentorProjects.map((mp) => mp.projectId);
-    const totalTasksCreated = projectIds.length > 0
+    // Calculate total tasks created by mentor across all ACTIVE projects
+    const activeProjectIds = activeMentorProjects.map((mp) => mp.projectId);
+    const totalTasksCreated = activeProjectIds.length > 0
       ? await this.taskRepository.count({
           where: { 
-            projectId: In(projectIds),
+            projectId: In(activeProjectIds),
             createdById: user.id,
           },
         })
       : 0;
 
     // Filter mentored projects: Only show COMPLETED or CANCELLED projects where mentor is ACTIVE
-    const completedOrCancelledProjects = mentorProjects.filter(
+    const completedOrCancelledProjects = activeMentorProjects.filter(
       (mp) =>
         mp.project?.status === ProjectStatus.COMPLETED ||
         mp.project?.status === ProjectStatus.CANCELLED,
@@ -1291,12 +1384,80 @@ export class UsersService {
       }),
     );
 
-    // Calculate statistics for projects
-    const activeProjectsCount = mentorProjects.filter(
+    // Format pending projects (mentor status = PENDING)
+    const pendingProjects = await Promise.all(
+      pendingMentorProjects.map(async (mp) => {
+        // Get project tags (categories + skills)
+        const categoryNames = mp.project.categories?.map(
+          (pc: any) => pc.category.name,
+        ) || [];
+        const skillNames = mp.project.skills?.map(
+          (ps: any) => ps.skill.name,
+        ) || [];
+        const projectTags = [...categoryNames, ...skillNames];
+
+        // Count active volunteers in this project
+        const volunteersGuided = mp.project.volunteers?.filter(
+          (v: any) => v.status === VolunteerStatus.ACTIVE,
+        ).length || 0;
+
+        // Count tasks that would be created (0 for pending)
+        const tasksCreated = 0;
+
+        return {
+          projectId: mp.project.id,
+          projectName: mp.project.name,
+          projectDescription: mp.project.description,
+          projectStatus: mp.project.status,
+          projectTags,
+          volunteersGuided,
+          tasksCreated,
+          joinedAsmentorAt: mp.joinedAt,
+          volunteersNeeded: mp.project.volunteersNeeded,
+        };
+      }),
+    );
+
+    // Format rejected projects (mentor status = REJECTED)
+    const rejectedProjects = await Promise.all(
+      rejectedMentorProjects.map(async (mp) => {
+        // Get project tags (categories + skills)
+        const categoryNames = mp.project.categories?.map(
+          (pc: any) => pc.category.name,
+        ) || [];
+        const skillNames = mp.project.skills?.map(
+          (ps: any) => ps.skill.name,
+        ) || [];
+        const projectTags = [...categoryNames, ...skillNames];
+
+        // Count active volunteers in this project
+        const volunteersGuided = mp.project.volunteers?.filter(
+          (v: any) => v.status === VolunteerStatus.ACTIVE,
+        ).length || 0;
+
+        // Count tasks that would be created (0 for rejected)
+        const tasksCreated = 0;
+
+        return {
+          projectId: mp.project.id,
+          projectName: mp.project.name,
+          projectDescription: mp.project.description,
+          projectStatus: mp.project.status,
+          projectTags,
+          volunteersGuided,
+          tasksCreated,
+          joinedAsmentorAt: mp.joinedAt,
+          volunteersNeeded: mp.project.volunteersNeeded,
+        };
+      }),
+    );
+
+    // Calculate statistics for projects (only from ACTIVE mentors)
+    const activeProjectsCount = activeMentorProjects.filter(
       (mp) => mp.project?.status === ProjectStatus.IN_PROGRESS,
     ).length;
     
-    const completedProjectsCount = mentorProjects.filter(
+    const completedProjectsCount = activeMentorProjects.filter(
       (mp) => mp.project?.status === ProjectStatus.COMPLETED,
     ).length;
     
@@ -1353,6 +1514,12 @@ export class UsersService {
 
       // Mentored Projects
       mentoredProjects,
+
+      // Pending Projects (Applications waiting for approval)
+      pendingProjects,
+
+      // Rejected Projects (Applications that have been rejected)
+      rejectedProjects,
 
       // Reviews
       reviews,

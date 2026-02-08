@@ -175,11 +175,28 @@
 
       <!-- Role-Specific Content -->
       <div v-if="isVolunteer">
-        <ProfileVolunteerProfile :user="userProfile" :stats="volunteerStats" :projects="volunteerProjects" :active-projects="activeVolunteerProjects" />
+        <ProfileVolunteerProfile 
+          :user="userProfile" 
+          :stats="volunteerStats" 
+          :projects="volunteerProjects" 
+          :active-projects="activeVolunteerProjects"
+          :pending-projects="pendingVolunteerProjects"
+          :rejected-projects="rejectedVolunteerProjects"
+          :is-own-profile="isOwnProfile"
+        />
       </div>
 
       <div v-else-if="isMentor">
-        <ProfileMentorProfile :user="userProfile" :stats="mentorStats" :projects="mentoredProjects" :reviews="userProfile.reviews || []" :achievements="userProfile.achievements || []" />
+        <ProfileMentorProfile 
+          :user="userProfile" 
+          :stats="mentorStats" 
+          :projects="mentoredProjects" 
+          :pending-projects="pendingMentorProjects"
+          :rejected-projects="rejectedMentorProjects"
+          :reviews="userProfile.reviews || []" 
+          :achievements="userProfile.achievements || []"
+          :is-own-profile="isOwnProfile"
+        />
       </div>
 
       <div v-else-if="isProjectCreator">
@@ -223,7 +240,11 @@ const creatorStats = ref<any>(null)
 // Projects
 const volunteerProjects = ref<any[]>([])
 const activeVolunteerProjects = ref<any[]>([])
+const pendingVolunteerProjects = ref<any[]>([])
+const rejectedVolunteerProjects = ref<any[]>([])
 const mentoredProjects = ref<any[]>([])
+const pendingMentorProjects = ref<any[]>([])
+const rejectedMentorProjects = ref<any[]>([])
 const createdProjects = ref<any[]>([])
 
 // Computed
@@ -403,6 +424,16 @@ const loadUserProfile = async () => {
       if (volunteerData.activeProjects) {
         activeVolunteerProjects.value = volunteerData.activeProjects
       }
+
+      // Map pending projects
+      if (volunteerData.pendingProjects) {
+        pendingVolunteerProjects.value = volunteerData.pendingProjects
+      }
+
+      // Map rejected projects
+      if (volunteerData.rejectedProjects) {
+        rejectedVolunteerProjects.value = volunteerData.rejectedProjects
+      }
     } 
     else if (user.role === 'project_owner') {
       // Map API response to local user object
@@ -533,6 +564,40 @@ const loadUserProfile = async () => {
           volunteers_needed: project.volunteersNeeded || 0,
           volunteers_joined: Math.floor((project.volunteersNeeded || 0) * 0.6), // Calculate approximate joined
           difficulty: 'Intermediate' // Default value as not in API
+        }))
+      }
+
+      // Map pending projects
+      if (mentorData.pendingProjects) {
+        pendingMentorProjects.value = mentorData.pendingProjects.map((project: any) => ({
+          id: project.projectId,
+          name: project.projectName,
+          description: project.projectDescription,
+          status: project.projectStatus,
+          tags: project.projectTags || [],
+          volunteersGuided: project.volunteersGuided || 0,
+          tasksCreated: project.tasksCreated || 0,
+          joined_at: project.joinedAsmentorAt,
+          volunteers_needed: project.volunteersNeeded || 0,
+          volunteers_joined: Math.floor((project.volunteersNeeded || 0) * 0.6),
+          difficulty: 'Intermediate'
+        }))
+      }
+
+      // Map rejected projects
+      if (mentorData.rejectedProjects) {
+        rejectedMentorProjects.value = mentorData.rejectedProjects.map((project: any) => ({
+          id: project.projectId,
+          name: project.projectName,
+          description: project.projectDescription,
+          status: project.projectStatus,
+          tags: project.projectTags || [],
+          volunteersGuided: project.volunteersGuided || 0,
+          tasksCreated: project.tasksCreated || 0,
+          joined_at: project.joinedAsmentorAt,
+          volunteers_needed: project.volunteersNeeded || 0,
+          volunteers_joined: Math.floor((project.volunteersNeeded || 0) * 0.6),
+          difficulty: 'Intermediate'
         }))
       }
     }

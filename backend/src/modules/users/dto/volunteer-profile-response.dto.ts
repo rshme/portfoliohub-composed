@@ -153,4 +153,14 @@ export class VolunteerProfileResponseDto {
   @Expose()
   @Type(() => ProjectContributionDto)
   activeProjects: ProjectContributionDto[];
+
+  // === Pending Projects (Applications) ===
+  @Expose()
+  @Type(() => ProjectContributionDto)
+  pendingProjects: ProjectContributionDto[];
+
+  // === Rejected Projects (Applications) ===
+  @Expose()
+  @Type(() => ProjectContributionDto)
+  rejectedProjects: ProjectContributionDto[];
 }

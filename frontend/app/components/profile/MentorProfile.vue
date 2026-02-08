@@ -108,6 +108,189 @@
       </div>
     </div>
 
+    <!-- Mentor Applications Section (Only visible for own profile) -->
+    <div v-if="props.isOwnProfile && ((props.pendingProjects && props.pendingProjects.length > 0) || (props.rejectedProjects && props.rejectedProjects.length > 0))" class="bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 rounded-xl shadow-lg p-4 sm:p-6 border-2 border-amber-200">
+      <div class="mb-4 sm:mb-6">
+        <div class="flex items-center gap-2 sm:gap-3 mb-2">
+          <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-md">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="text-white sm:w-6 sm:h-6" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-lg sm:text-xl font-bold text-gray-900 bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
+              Mentorship Applications
+            </h3>
+            <p class="text-xs sm:text-sm text-gray-600 mt-0.5">Track your pending and rejected mentorship offers</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex gap-2 mb-4 sm:mb-6 border-b border-amber-200">
+        <button
+          @click="activeMentorApplicationTab = 'pending'"
+          class="flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base font-semibold rounded-t-lg transition-all duration-200"
+          :class="activeMentorApplicationTab === 'pending' 
+            ? 'bg-white text-amber-700 border-b-2 border-amber-500 shadow-sm' 
+            : 'text-gray-600 hover:text-amber-600 hover:bg-amber-50/50'"
+        >
+          <div class="flex items-center justify-center gap-1.5 sm:gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="sm:w-5 sm:h-5" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Pending</span>
+            <span v-if="props.pendingProjects && props.pendingProjects.length > 0" class="inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 text-xs font-bold rounded-full" :class="activeMentorApplicationTab === 'pending' ? 'bg-amber-600 text-white' : 'bg-gray-300 text-gray-700'">
+              {{ props.pendingProjects.length }}
+            </span>
+          </div>
+        </button>
+        <button
+          @click="activeMentorApplicationTab = 'rejected'"
+          class="flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base font-semibold rounded-t-lg transition-all duration-200"
+          :class="activeMentorApplicationTab === 'rejected' 
+            ? 'bg-white text-red-700 border-b-2 border-red-500 shadow-sm' 
+            : 'text-gray-600 hover:text-red-600 hover:bg-red-50/50'"
+        >
+          <div class="flex items-center justify-center gap-1.5 sm:gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="sm:w-5 sm:h-5" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Rejected</span>
+            <span v-if="props.rejectedProjects && props.rejectedProjects.length > 0" class="inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 text-xs font-bold rounded-full" :class="activeMentorApplicationTab === 'rejected' ? 'bg-red-600 text-white' : 'bg-gray-300 text-gray-700'">
+              {{ props.rejectedProjects.length }}
+            </span>
+          </div>
+        </button>
+      </div>
+
+      <!-- Tab Content: Pending Projects -->
+      <div v-if="activeMentorApplicationTab === 'pending'" class="space-y-4">
+        <div v-if="!props.pendingProjects || props.pendingProjects.length === 0" class="text-center py-8 sm:py-12 bg-white rounded-xl border-2 border-dashed border-amber-200">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="text-amber-300 mx-auto mb-4" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <p class="text-gray-500 text-sm sm:text-base font-medium">No pending applications</p>
+          <p class="text-gray-400 text-xs sm:text-sm mt-1">Mentorship offers awaiting approval will appear here</p>
+        </div>
+        
+        <div
+          v-for="project in props.pendingProjects"
+          :key="project.id"
+          class="relative group bg-white rounded-xl p-4 sm:p-5 border-2 border-amber-200 hover:border-amber-300 hover:shadow-lg transition-all duration-300"
+        >
+          <!-- Pending Badge -->
+          <div class="absolute top-0 right-0 z-10">
+            <div class="bg-gradient-to-br from-amber-400 to-orange-500 text-white text-[10px] sm:text-xs font-bold px-2 sm:px-4 py-0.5 sm:py-1 shadow-md flex items-center gap-1" style="clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 10% 50%);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              PENDING
+            </div>
+          </div>
+
+          <div class="flex flex-col sm:flex-row items-start gap-4 pr-16 sm:pr-4">
+            <div class="flex-1 w-full sm:w-auto">
+              <div class="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                <h4 class="text-base sm:text-lg font-semibold text-gray-900 line-clamp-2">{{ project.name }}</h4>
+                <span
+                  class="inline-flex items-center px-2 py-1 rounded-lg text-[10px] sm:text-xs font-medium shadow-sm w-fit"
+                  :class="getStatusClass(project.status)"
+                >
+                  {{ formatStatus(project.status) }}
+                </span>
+              </div>
+              
+              <p class="text-gray-600 text-xs sm:text-sm mb-3 line-clamp-2">{{ project.description }}</p>
+
+              <!-- Project Tags -->
+              <div class="flex flex-wrap gap-1.5 sm:gap-2 mb-3">
+                <span
+                  v-for="tag in project.tags.slice(0, 3)"
+                  :key="tag"
+                  class="inline-flex items-center px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 text-[10px] sm:text-xs font-medium border border-amber-200"
+                >
+                  {{ tag }}
+                </span>
+                <span v-if="project.tags.length > 3" class="inline-flex items-center px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg bg-gray-100 text-gray-600 text-[10px] sm:text-xs font-medium">
+                  +{{ project.tags.length - 3 }} more
+                </span>
+              </div>
+
+              <!-- Application Date -->
+              <div class="flex items-center text-xs sm:text-sm text-gray-500">
+                <ClockIcon size="14" class="mr-1.5" />
+                <span>Applied {{ formatProjectDate(project.joined_at) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Content: Rejected Projects -->
+      <div v-if="activeMentorApplicationTab === 'rejected'" class="space-y-4">
+        <div v-if="!props.rejectedProjects || props.rejectedProjects.length === 0" class="text-center py-8 sm:py-12 bg-white rounded-xl border-2 border-dashed border-red-200">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="text-red-300 mx-auto mb-4" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p class="text-gray-500 text-sm sm:text-base font-medium">No rejected applications</p>
+          <p class="text-gray-400 text-xs sm:text-sm mt-1">Rejected mentorship offers will appear here</p>
+        </div>
+        
+        <div
+          v-for="project in props.rejectedProjects"
+          :key="project.id"
+          class="relative group bg-white rounded-xl p-4 sm:p-5 border-2 border-red-200 hover:border-red-300 hover:shadow-lg transition-all duration-300 opacity-75 hover:opacity-100"
+        >
+          <!-- Rejected Badge -->
+          <div class="absolute top-0 right-0 z-10">
+            <div class="bg-gradient-to-br from-red-500 to-red-600 text-white text-[10px] sm:text-xs font-bold px-2 sm:px-4 py-0.5 sm:py-1 shadow-md flex items-center gap-1" style="clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 10% 50%);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              REJECTED
+            </div>
+          </div>
+
+          <div class="flex flex-col sm:flex-row items-start gap-4 pr-16 sm:pr-4">
+            <div class="flex-1 w-full sm:w-auto">
+              <div class="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                <h4 class="text-base sm:text-lg font-semibold text-gray-900 line-clamp-2">{{ project.name }}</h4>
+                <span
+                  class="inline-flex items-center px-2 py-1 rounded-lg text-[10px] sm:text-xs font-medium shadow-sm w-fit"
+                  :class="getStatusClass(project.status)"
+                >
+                  {{ formatStatus(project.status) }}
+                </span>
+              </div>
+              
+              <p class="text-gray-600 text-xs sm:text-sm mb-3 line-clamp-2">{{ project.description }}</p>
+
+              <!-- Project Tags -->
+              <div class="flex flex-wrap gap-1.5 sm:gap-2 mb-3">
+                <span
+                  v-for="tag in project.tags.slice(0, 3)"
+                  :key="tag"
+                  class="inline-flex items-center px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg bg-gradient-to-r from-red-50 to-rose-50 text-red-700 text-[10px] sm:text-xs font-medium border border-red-200"
+                >
+                  {{ tag }}
+                </span>
+                <span v-if="project.tags.length > 3" class="inline-flex items-center px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg bg-gray-100 text-gray-600 text-[10px] sm:text-xs font-medium">
+                  +{{ project.tags.length - 3 }} more
+                </span>
+              </div>
+
+              <!-- Application Date -->
+              <div class="flex items-center text-xs sm:text-sm text-gray-500">
+                <ClockIcon size="14" class="mr-1.5" />
+                <span>Applied {{ formatProjectDate(project.joined_at) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Current Active Projects -->
     <div v-if="stats.currentActiveProjects && stats.currentActiveProjects.length > 0" class="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-2xl shadow-lg p-6 border border-blue-200">
       <div class="flex items-center justify-between mb-6">
@@ -390,12 +573,18 @@ interface Props {
     }>
   }
   projects: any[]
+  pendingProjects?: any[]
+  rejectedProjects?: any[]
   reviews?: any[]
   achievements?: any[]
+  isOwnProfile?: boolean
 }
 
 const props = defineProps<Props>()
 const authStore = useAuthStore()
+
+// Tabs state for Mentor Applications
+const activeMentorApplicationTab = ref<'pending' | 'rejected'>('pending')
 
 // Pagination for projects
 const itemsPerPage = ref(3)
