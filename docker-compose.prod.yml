@@ -1,0 +1,125 @@
+version: '3.8'
+
+# Docker Compose untuk Production
+# File ini menggunakan pre-built images dari registry
+# Cocok untuk deployment di server dengan resource terbatas
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: portfoliohub-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-root}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-root}
+      POSTGRES_DB: ${POSTGRES_DB:-portfoliohub}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - portfoliohub-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-root} -d ${POSTGRES_DB:-portfoliohub}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: portfoliohub-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - portfoliohub-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # NestJS Backend - Pre-built Image
+  backend:
+    image: ${REGISTRY:-docker.io}/${USERNAME:-your-username}/portfoliohub-backend:${VERSION:-latest}
+    container_name: portfoliohub-backend
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.8'
+          memory: 1024M
+        reservations:
+          cpus: '0.3'
+          memory: 256M
+    environment:
+      # Database Configuration
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USERNAME: ${POSTGRES_USER:-root}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-root}
+      DATABASE_NAME: ${POSTGRES_DB:-portfoliohub}
+      
+      # JWT Configuration
+      JWT_SECRET: ${JWT_SECRET:-portfoliohubsecretkey}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      
+      # Application
+      PORT: 8000
+      NODE_ENV: production
+      
+      # Cloudinary Configuration
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+      
+      # Redis Configuration
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      REDIS_DB: ${REDIS_DB:-0}
+      REDIS_TTL: ${REDIS_TTL:-3600}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - portfoliohub-network
+
+  # Nuxt Frontend - Pre-built Image
+  frontend:
+    image: ${REGISTRY:-docker.io}/${USERNAME:-your-username}/portfoliohub-frontend:${VERSION:-latest}
+    container_name: portfoliohub-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.8'
+          memory: 1024M
+        reservations:
+          cpus: '0.3'
+          memory: 256M
+    environment:
+      NUXT_PUBLIC_API_BASE_URL: ${NUXT_PUBLIC_API_BASE_URL:-http://localhost:8000/api/v1}
+      NODE_ENV: production
+    depends_on:
+      - backend
+    networks:
+      - portfoliohub-network
+
+networks:
+  portfoliohub-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:

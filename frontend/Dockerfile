@@ -16,7 +16,8 @@ COPY . .
 
 # Build the application with optimized Node.js memory settings
 # Increase to 2GB for build process (can handle larger builds)
-ENV NODE_OPTIONS="--max-old-space-size=2048"
+# Use optimize_for_size to reduce memory during compilation
+ENV NODE_OPTIONS="--max-old-space-size=2048 --optimize-for-size"
 RUN npm run build
 
 # Production stage
