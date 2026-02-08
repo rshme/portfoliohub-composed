@@ -15,8 +15,9 @@ RUN npm ci --prefer-offline --no-audit --no-fund \
 COPY . .
 
 # Build the application with optimized Node.js memory settings
-# Limit max old space size to 512MB to prevent memory spikes
-ENV NODE_OPTIONS="--max-old-space-size=512"
+# Increase to 2GB for build process (can handle larger builds)
+# Use optimize_for_size to reduce memory during compilation
+ENV NODE_OPTIONS="--max-old-space-size=2048 --optimize-for-size"
 RUN npm run build
 
 # Production stage

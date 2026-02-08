@@ -225,13 +225,19 @@ export default defineNuxtConfig({
     storesDirs: ['./stores/**']
   },
 
-  build: {
-    transpile: ['vue3-apexcharts', 'apexcharts']
-  },
-
   vite: {
-    optimizeDeps: {
-      include: ['vue3-apexcharts', 'apexcharts']
+    build: {
+      // Optimize chunk size to reduce memory usage
+      chunkSizeWarningLimit: 1000,
+      rollupOptions: {
+        output: {
+          // Manual chunks to reduce memory pressure during build
+          manualChunks: {
+            'vendor': ['vue', 'vue-router'],
+            'ui': ['sweetalert2', 'swiper']
+          }
+        }
+      }
     }
   }
 })
