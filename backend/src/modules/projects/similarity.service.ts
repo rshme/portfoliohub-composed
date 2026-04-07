@@ -21,7 +21,7 @@ import { LoggingService } from '../logging/logging.service';
 
 @Injectable()
 export class SimilarityService {
-  private readonly CACHE_TTL = 3600; // 1 hour in seconds
+  private readonly CACHE_TTL = 60 * 60 * 1000; // 1 hour in milliseconds
   private readonly CACHE_PREFIX = 'project_recommendations';
 
   constructor(

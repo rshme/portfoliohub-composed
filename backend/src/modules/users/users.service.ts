@@ -4,9 +4,12 @@ import {
   NotFoundException,
   BadRequestException,
   UnauthorizedException,
+  Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Not, In } from 'typeorm';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 import { User } from './entities/user.entity';
 import { CreateUserDto, UpdateUserDto, UpdatePasswordDto, UpdateOnboardingProfileDto } from './dto';
 import * as bcrypt from 'bcrypt';
@@ -30,6 +33,11 @@ import { LoggingService } from '../logging/logging.service';
 
 @Injectable()
 export class UsersService {
+  private readonly PROFILE_CACHE_TTL = 15 * 60 * 1000; // 15 minutes in milliseconds
+  private readonly USER_PROFILE_CACHE_PREFIX = 'users_profile';
+  private readonly VOLUNTEER_PROFILE_CACHE_PREFIX = 'users_volunteer_profile';
+  private readonly MENTOR_PROFILE_CACHE_PREFIX = 'users_mentor_profile';
+
   constructor(
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
@@ -55,6 +63,8 @@ export class UsersService {
     private readonly organizationRepository: Repository<Organization>,
     @InjectRepository(Testimonial)
     private readonly testimonialRepository: Repository<Testimonial>,
+    @Inject(CACHE_MANAGER)
+    private readonly cacheManager: Cache,
     private readonly loggingService: LoggingService,
   ) {}
 
@@ -87,7 +97,9 @@ export class UsersService {
       password: hashedPassword,
     });
 
-    return await this.usersRepository.save(user);
+    const savedUser = await this.usersRepository.save(user);
+    await this.invalidateUserCaches(savedUser.id, savedUser.username);
+    return savedUser;
   }
 
   /**
@@ -144,9 +156,22 @@ export class UsersService {
    * Find user by ID
    */
   async findById(id: string): Promise<User | null> {
-    return await this.usersRepository.findOne({
+    const cacheKey = `${this.USER_PROFILE_CACHE_PREFIX}:${id}`;
+    const cached = await this.cacheManager.get<User>(cacheKey);
+
+    if (cached) {
+      return cached;
+    }
+
+    const user = await this.usersRepository.findOne({
       where: { id },
     });
+
+    if (user) {
+      await this.cacheManager.set(cacheKey, user, this.PROFILE_CACHE_TTL);
+    }
+
+    return user;
   }
 
   /**
@@ -165,6 +190,7 @@ export class UsersService {
    */
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
     const user = await this.findByIdOrFail(id);
+    const previousUsername = user.username;
 
     // Validate organization if organizationId is provided
     if (updateUserDto.organizationId !== undefined) {
@@ -241,6 +267,8 @@ export class UsersService {
       }
     }
 
+    await this.invalidateUserCaches(id, previousUsername);
+
     // Return updated user with relations
     return await this.findByIdOrFail(id);
   }
@@ -275,6 +303,12 @@ export class UsersService {
 
     // Update password
     await this.usersRepository.update(id, { password: hashedPassword });
+
+    const userWithUsername = await this.usersRepository.findOne({
+      where: { id },
+      select: ['id', 'username'],
+    });
+    await this.invalidateUserCaches(id, userWithUsername?.username);
   }
 
   /**
@@ -372,6 +406,8 @@ export class UsersService {
       }
     }
 
+    await this.invalidateUserCaches(id, user.username);
+
     // Return updated user
     return await this.findByIdOrFail(id);
   }
@@ -382,6 +418,7 @@ export class UsersService {
   async remove(id: string): Promise<void> {
     const user = await this.findByIdOrFail(id);
     await this.usersRepository.remove(user);
+    await this.invalidateUserCaches(id, user.username);
   }
 
   /**
@@ -916,6 +953,13 @@ export class UsersService {
    * Get volunteer profile by username with comprehensive statistics
    */
   async getVolunteerProfileByUsername(username: string): Promise<any> {
+    const cacheKey = `${this.VOLUNTEER_PROFILE_CACHE_PREFIX}:${username}`;
+    const cached = await this.cacheManager.get<any>(cacheKey);
+
+    if (cached) {
+      return cached;
+    }
+
     // Find user and validate they are a volunteer
     const user = await this.usersRepository.findOne({
       where: { username },
@@ -1164,7 +1208,7 @@ export class UsersService {
       }),
     );
 
-    return {
+    const response = {
       // Basic Info
       id: user.id,
       username: user.username,
@@ -1210,12 +1254,23 @@ export class UsersService {
       // Rejected Projects (Applications that have been rejected)
       rejectedProjects,
     };
+
+    await this.cacheManager.set(cacheKey, response, this.PROFILE_CACHE_TTL);
+
+    return response;
   }
 
   /**
    * Get mentor profile by username (Public endpoint)
    */
   async getMentorProfileByUsername(username: string): Promise<any> {
+    const cacheKey = `${this.MENTOR_PROFILE_CACHE_PREFIX}:${username}`;
+    const cached = await this.cacheManager.get<any>(cacheKey);
+
+    if (cached) {
+      return cached;
+    }
+
     // Find user by username with organization relation
     const user = await this.usersRepository.findOne({
       where: { username },
@@ -1465,7 +1520,7 @@ export class UsersService {
     // Note: mentoredProjects already includes completed projects, so no need to add completedProjectsCount
     const totalProjects = mentoredProjects.length + activeProjectsCount;
 
-    return {
+    const response = {
       // Basic Info
       id: user.id,
       username: user.username,
@@ -1524,6 +1579,24 @@ export class UsersService {
       // Reviews
       reviews,
     };
+
+    await this.cacheManager.set(cacheKey, response, this.PROFILE_CACHE_TTL);
+
+    return response;
+  }
+
+  private async invalidateUserCaches(
+    userId: string,
+    username?: string,
+  ): Promise<void> {
+    await this.cacheManager.del(`${this.USER_PROFILE_CACHE_PREFIX}:${userId}`);
+
+    if (username) {
+      await Promise.all([
+        this.cacheManager.del(`${this.VOLUNTEER_PROFILE_CACHE_PREFIX}:${username}`),
+        this.cacheManager.del(`${this.MENTOR_PROFILE_CACHE_PREFIX}:${username}`),
+      ]);
+    }
   }
 
   /**

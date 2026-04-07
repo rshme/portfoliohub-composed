@@ -26,7 +26,7 @@ import { PaginationMeta } from '../../common/interfaces/response.interface';
 
 @Injectable()
 export class ProjectsService {
-  private readonly CACHE_TTL = 3600; // 1 hour in seconds
+  private readonly CACHE_TTL = 60 * 60 * 1000; // 1 hour in milliseconds
   private readonly CACHE_PREFIX = 'projects_by_creator';
 
   constructor(
